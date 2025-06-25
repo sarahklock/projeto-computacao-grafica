@@ -587,23 +587,37 @@ Surface getDist(vec3 p)
 Surface rayMarching(vec3 Cam, vec3 rd)
 {
     float d0 = 0.0;
-    vec3 pi = Cam +d0*rd;
+    vec3 pi = Cam + d0 * rd;
     Surface dist = getDist(pi);
-    int i=0;
-    while ((i<MAX_STEPS)&&(dist.sd>SURF_DIST)&&(d0<MAX_DIST))
-    {
-        d0+=dist.sd;
-        pi = Cam+d0*rd;
-        dist=getDist(pi);
+
+    // Posição animada do sol — deve ser igual à usada em getDist
+    float angle = iTime * 0.2;
+    vec3 sunPos = vec3(6.0 * cos(angle), 3.0 * sin(angle), 4.0);
+
+    float glow = 0.0;
+
+    int i = 0;
+    while ((i < MAX_STEPS) && (dist.sd > SURF_DIST) && (d0 < MAX_DIST)) {
+        float distToSun = length(pi - sunPos);
+        glow += exp(-distToSun * 10.0) * 0.02;
+
+        d0 += dist.sd;
+        pi = Cam + d0 * rd;
+        dist = getDist(pi);
         i++;
     }
-    if((i>MAX_STEPS)||(d0>MAX_DIST))
-    {
-        dist.color=Sky(rd);
-        dist.sd=MAX_DIST;
+
+    if ((i > MAX_STEPS) || (d0 > MAX_DIST)) {
+        dist.color = Sky(rd) + glow * vec3(1.0, 0.9, 0.6); // adiciona brilho ao fundo
+        dist.sd = MAX_DIST;
+    } else {
+        dist.sd = d0;
+
+        if (dist.id == 30) {
+            dist.color = vec3(1.0, 0.9, 0.6) * 6.0; // sol visível diretamente
+        }
     }
-    else
-        dist.sd=d0;
+
     return dist;
 }
 
@@ -625,24 +639,37 @@ mat3 setCamera(vec3 CamPos, vec3 LookAt)
 }
 
 // https://iquilezles.org/articles/rmshadows
-float calcSoftshadow( in vec3 ro, in vec3 rd, in float mint, in float tmax )
+float calcSoftshadow(in vec3 ro, in vec3 rd, in float mint, in float tmax, int ignoreId)
 {
     // bounding volume
-    float tp = (tmax*0.75-ro.y)/rd.y; if( tp>0.0 ) tmax = min( tmax, tp );
+    float tp = (tmax * 0.75 - ro.y) / rd.y;
+    if (tp > 0.0) tmax = min(tmax, tp);
 
     float res = 1.0;
     float t = mint;
-    for( int i=0; i<24; i++ )
+
+    for (int i = 0; i < 24; i++)
     {
-                float h = getDist( ro + t*rd ).sd;
-        float s = clamp(8.0*h/t,0.0,1.0);
-        res = min( res, s );
-        t += clamp( h, 0.01, 0.25 );
-        if( res<0.001 || t>tmax ) break;
+        Surface s = getDist(ro + t * rd);
+
+        // ignora interseções com o ID especificado (ex: o próprio sol)
+        if (s.id == ignoreId) {
+            t += 0.05;
+            continue;
+        }
+
+        float h = s.sd;
+        float sFactor = clamp(8.0 * h / t, 0.0, 1.0);
+        res = min(res, sFactor);
+        t += clamp(h, 0.01, 0.25);
+
+        if (res < 0.001 || t > tmax) break;
     }
-    res = clamp( res, 0.0, 1.0 );
-    return res*res*(3.0-2.0*res);
+
+    res = clamp(res, 0.0, 1.0);
+    return res * res * (3.0 - 2.0 * res); // suavização final
 }
+
 
 // "p" point apply texture to
 // "n" normal at "p"
@@ -661,47 +688,76 @@ vec3 boxmap( in sampler2D s, in vec3 p, in vec3 n, in float k )
         return ((x*m.x + y*m.y + z*m.z) / (m.x + m.y + m.z)).xyz;
 }
 
-vec3 getLight(vec3 p,Surface s,vec3 Cam)
+vec3 getLight(vec3 p, Surface s, vec3 Cam)
 {
-    if(s.sd==MAX_DIST)
+    if (s.sd == MAX_DIST)
         return s.color;
 
-    vec3 LightColor = vec3(1.0);
-    float exp=7.0;
-    vec3 lightPos =vec3(2.0,4.0,2.0);
+    // Parâmetros da luz do sol (animada)
+    float angle = iTime * 0.2;
+    vec3 sunPos = vec3(6.0 * cos(angle), 3.0 * sin(angle), 4.0);
+    vec3 sunColor = vec3(1.0, 0.9, 0.6);
 
-    vec3 LightColor1 = vec3(1.0,0.0,0.0);
-    vec3 lightPos1 =vec3(-3.0,4.0,4.0);
+    // Segunda luz (vermelha estática)
+    vec3 LightColor1 = vec3(1.0, 0.0, 0.0);
+    vec3 lightPos1 = vec3(-3.0, 4.0, 4.0);
 
-    //lightPos.xz+=length(lightPos)*vec2(cos(iTime*0.75),sin(iTime*0.75));
-    vec3 lightDir = normalize(lightPos-p);
-    vec3 lightDir1 = normalize(lightPos1-p);
-    vec3 eye = normalize(Cam-p);
+    // Vetores de direção da luz
+    vec3 lightDir = normalize(sunPos - p);
+    vec3 lightDir1 = normalize(lightPos1 - p);
+    vec3 eye = normalize(Cam - p);
 
     vec3 N = estimateNormal(p);
-    vec3 R = normalize(reflect(-lightDir,N));
-    vec3 R1 = normalize(reflect(-lightDir1,N));
-    float l=dot(N,lightDir);
-    l= clamp(l,0.0,1.0);
-    float l1=dot(N,lightDir1);
-    l1= clamp(l1,0.0,1.0);
+    vec3 R = normalize(reflect(-lightDir, N));
+    vec3 R1 = normalize(reflect(-lightDir1, N));
 
-    if(s.id == 10){
-        // Mapeamento cilíndrico (em torno do eixo Y)
-        vec3 dp = p - vec3(0.0, 1.0, 4.0); // posição relativa ao centro do cilindro
-        float theta = atan(dp.z, dp.x); // ângulo polar
-        float u = (theta + PI) / (2.0 * PI); // normaliza para [0,1]
-        float v = 1.0 - clamp(dp.y / 2.0 + 0.5, 0.0, 1.0); // de -1 a 1 para [0,1]
+    float l = clamp(dot(N, lightDir), 0.0, 1.0);
+    float l1 = clamp(dot(N, lightDir1), 0.0, 1.0);
 
-        s.color = texture(iChannel0, vec2(u, v)).rgb;        
-    }
-    else if (s.id == 30) {
-        s.color = s.color * 5.0; // brilho forte (emissão)
+    // Evita sombras sobre o próprio sol
+    float ss = 1.0;
+    float ss1 = 1.0;
+    if (s.id != 30) {
+        ss  = calcSoftshadow(p + 10.0 * EPSILON * lightDir,  lightDir,  0.1, 3.0, 30);
+        ss1 = calcSoftshadow(p + 10.0 * EPSILON * lightDir1, lightDir1, 0.1, 3.0, -1);
     }
 
-    
 
+    // Reflexão especular
+    float exp = 7.0;
+    vec3 Is = vec3(0.0);
+    vec3 Is1 = vec3(0.0);
 
+    float dotRN = dot(R, eye);
+    if (dotRN > 0.0)
+        Is = sunColor * s.Ks * pow(dotRN, exp);
+
+    float dotRN1 = dot(R1, eye);
+    if (dotRN1 > 0.0)
+        Is1 = LightColor1 * s.Ks * pow(dotRN1, exp);
+
+    // Mapeamento de textura no cilindro
+    if (s.id == 10) {
+        vec3 dp = p - vec3(0.0, 1.0, 4.0);
+        float theta = atan(dp.z, dp.x);
+        float u = (theta + PI) / (2.0 * PI);
+        float v = 1.0 - clamp(dp.y / 2.0 + 0.5, 0.0, 1.0);
+        s.color = texture(iChannel0, vec2(u, v)).rgb;
+    }
+
+    // Sol visível (não iluminado, só cor intensa)
+    if (s.id == 30) {
+        return sunColor * 1.0;
+    }
+
+    // Composição final
+    vec3 c = s.color * s.Ka +
+             (s.color * sunColor * l * s.Kd) * ss +
+             (s.color * LightColor1 * l1 * s.Kd) * ss1 +
+             Is + Is1;
+
+    return c;
+}
 
 
     // if(s.id==3)
@@ -729,31 +785,6 @@ vec3 getLight(vec3 p,Surface s,vec3 Cam)
     //     s.color=boxmap(iChannel0,p,N,0.5);
     // }
     
-
-    //phong contrib
-    vec3 Is=vec3(0.);
-   vec3 Is1=vec3(0.);
-    float dotRN = dot(R,eye);
-    if(dotRN>0.0)
-    {
-        Is=LightColor*s.Ks*pow(dotRN,exp);//*calcSoftshadow( p+10.0*EPSILON*R, R, 0.1, 3.0 );
-    }
-
-    float dotRN1 = dot(R1,eye);
-    if(dotRN1>0.0)
-    {
-        Is1=LightColor1*s.Ks*pow(dotRN1,exp);//*calcSoftshadow( p+10.0*EPSILON*R1, R1, 0.1, 3.0 );
-    }
-   float  ss =calcSoftshadow( p+10.0*EPSILON*lightDir,lightDir, 0.1, 3.0 );
-   float ss1=calcSoftshadow( p+10.0*EPSILON*lightDir1,lightDir1, 0.1, 3.0 );
-    vec3 c = s.color*s.Ka+(s.color*l*s.Kd)*ss+(s.color*l1*s.Kd)*ss1+Is+ Is1;
-    //Surface sh = rayMarching(p+100.0*EPSILON*lightDir,lightDir);
-    //if(sh.sd<length(p-lightPos)) c*=0.2;
-    //c*= ;
-    return c;
-}
-
-
 
 
 void main()
