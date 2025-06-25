@@ -543,8 +543,8 @@ Surface getDist(vec3 p)
 
     Surface cyl;
     
-    vec2 size = vec2(0.35, 1.5); // raio = 0.35, altura = 3.0
-    vec3 position = vec3(0.0, 1.5, 4.0); // centro y = altura / 2 = 1.5
+    vec2 size = vec2(0.35, 1.2); // raio = 0.35, altura = 3.0
+    vec3 position = vec3(0.0, 1.2, 4.0); // centro y = altura / 2 = 1.5
     cyl.sd = cylinderVerticalDist(p - position, size);
 
     //cyl.sd = cylinderVerticalDist(p - vec3(0.0, 1.0, 4.0), vec2(0.35, 1.0)); // raio = 0.5, altura = 2.0 (de -1 a 1)
@@ -554,7 +554,18 @@ Surface getDist(vec3 p)
     cyl.Ks = 0.4;
     cyl.id = 10;  // ID novo para aplicar textura
     
-    return cyl;
+    Surface ground;
+    ground.sd = p.y;
+    ground.color = vec3(0.2, 0.8, 0.2);
+    ground.Ka = 0.1;
+    ground.Kd = 0.5;
+    ground.Ks = 0.1;
+    ground.id = 99;
+
+    return (ground.sd < cyl.sd) ? ground : cyl;
+
+
+    // return cyl;
 }
 
 Surface rayMarching(vec3 Cam, vec3 rd)
@@ -755,11 +766,12 @@ vec3 l = getLight(po,d,Cam);
 if (d.sd < MAX_DIST) {
     col = l; // cor da superfície com iluminação
 } else {
-    if (rd.y < -0.01) {
-        col = vec3(0.2, 0.6, 0.2); // grama
-    } else {
-        col = vec3(0.4, 0.7, 1.0); // céu
-    }
+    col =  vec3(0.4, 0.7, 1.0); // céu
+    // if (rd.y < -0.01) {
+    //     col = vec3(0.2, 0.6, 0.2); // grama
+    // } else {
+    //     col = vec3(0.4, 0.7, 1.0); // céu
+    // }
 }
 
 
