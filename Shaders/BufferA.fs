@@ -799,11 +799,11 @@ vec3 col;
 
 
     vec2 mo = (iMouse.xy )/iResolution.xy;
-    vec3 Cam= vec3 (-2.0,-1.0,1.0);
+    vec3 Cam= vec3 (1.0, -1.0,2.0);
     float am = mix(-0.5*PI,0.5*PI,iMouse.z*mo.x);
     float bm = mix(-0.25*PI,0.25*PI,iMouse.z*mo.y);
 
-    vec3 Target = vec3 (1.0,1.0,6.0);
+    vec3 Target = vec3 (0.5,1.5,0.5);
     Cam.xz+=length(Cam-Target)*vec2(cos(am),sin(am));;
     Cam.yz+=length(Cam-Target)*vec2(cos(bm),sin(bm));;
     mat3 Ca = setCamera(Cam,Target);
