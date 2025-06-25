@@ -1,0 +1,20 @@
+[
+{
+  "directory": "C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/build",
+  "command": "\"C:\\Users\\Sarah Klock\\Downloads\\winlibs-x86_64-posix-seh-gcc-15.1.0-mingw-w64msvcrt-12.0.0-r1\\mingw64\\bin\\g++.exe\" -I\"C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/includes\" -I\"C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/stb_image\" -g -std=gnu++17 -o CMakeFiles\\Math3.dir\\Math3.cpp.obj -c \"C:\\Users\\Sarah Klock\\OneDrive\\Documentos\\SI-USP\\CG\\textura\\Math3.cpp\"",
+  "file": "C:\\Users\\Sarah Klock\\OneDrive\\Documentos\\SI-USP\\CG\\textura\\Math3.cpp",
+  "output": "CMakeFiles\\Math3.dir\\Math3.cpp.obj"
+},
+{
+  "directory": "C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/build",
+  "command": "\"C:\\Users\\Sarah Klock\\Downloads\\winlibs-x86_64-posix-seh-gcc-15.1.0-mingw-w64msvcrt-12.0.0-r1\\mingw64\\bin\\gcc.exe\" -I\"C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/includes\" -I\"C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/stb_image\" -g -o CMakeFiles\\Math3.dir\\glad.c.obj -c \"C:\\Users\\Sarah Klock\\OneDrive\\Documentos\\SI-USP\\CG\\textura\\glad.c\"",
+  "file": "C:\\Users\\Sarah Klock\\OneDrive\\Documentos\\SI-USP\\CG\\textura\\glad.c",
+  "output": "CMakeFiles\\Math3.dir\\glad.c.obj"
+},
+{
+  "directory": "C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/build",
+  "command": "\"C:\\Users\\Sarah Klock\\Downloads\\winlibs-x86_64-posix-seh-gcc-15.1.0-mingw-w64msvcrt-12.0.0-r1\\mingw64\\bin\\g++.exe\" -I\"C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/includes\" -I\"C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/stb_image\" -g -std=gnu++17 -o CMakeFiles\\Math3.dir\\stb_image\\stb_image.cpp.obj -c \"C:\\Users\\Sarah Klock\\OneDrive\\Documentos\\SI-USP\\CG\\textura\\stb_image\\stb_image.cpp\"",
+  "file": "C:\\Users\\Sarah Klock\\OneDrive\\Documentos\\SI-USP\\CG\\textura\\stb_image\\stb_image.cpp",
+  "output": "CMakeFiles\\Math3.dir\\stb_image\\stb_image.cpp.obj"
+}
+]

@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Qt 6.9.0 MinGW 64-bit",
+    "compilers": {
+      "C": "C:/Qt/Tools/mingw1310_64/bin/gcc.exe",
+      "CXX": "C:/Qt/Tools/mingw1310_64/bin/g++.exe"
+    },
+    "environmentVariables": {
+      "PATH": "C:/Qt/6.9.0/mingw_64/bin;C:/Qt/Tools/mingw1310_64/bin"
+    },
+    "toolchainFile": "",
+    "cmakeSettings": {
+      "CMAKE_PREFIX_PATH": "C:/Qt/6.9.0/mingw_64/lib/cmake"
+    }
+  }
+]
