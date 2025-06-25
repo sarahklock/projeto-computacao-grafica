@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura
+# Install script for directory: C:/Users/despinxz/.vscode/projetos/cg_ep/projeto-computacao-grafica
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,13 +34,13 @@ endif()
 
 # Set path to fallback-tool for dependency-resolution.
 if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "C:/Users/Sarah Klock/Downloads/winlibs-x86_64-posix-seh-gcc-15.1.0-mingw-w64msvcrt-12.0.0-r1/mingw64/bin/objdump.exe")
+  set(CMAKE_OBJDUMP "C:/Qt/Tools/mingw1310_64/bin/objdump.exe")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/build/install_local_manifest.txt"
+  file(WRITE "C:/Users/despinxz/.vscode/projetos/cg_ep/projeto-computacao-grafica/build/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()
 if(CMAKE_INSTALL_COMPONENT)
@@ -56,6 +56,6 @@ else()
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "C:/Users/Sarah Klock/OneDrive/Documentos/SI-USP/CG/textura/build/${CMAKE_INSTALL_MANIFEST}"
+  file(WRITE "C:/Users/despinxz/.vscode/projetos/cg_ep/projeto-computacao-grafica/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()
