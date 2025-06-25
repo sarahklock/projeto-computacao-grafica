@@ -509,10 +509,7 @@ Surface csgObject(vec3 p)
     R = subtractionS(R,S);
     return R;
 }
-
-Surface getDist(vec3 p)
-{
-    //float ds = heartDist(p,vec3(0.0,1.0,6.0),1.0);
+ //float ds = heartDist(p,vec3(0.0,1.0,6.0),1.0);
     // Surface Heart;
     // Heart.sd = ds; Heart.id=0;
     // Heart.color = vec3 (0.9,0.1,0.05); Heart.Ka=0.2; Heart.Kd=0.3;Heart.Ks=0.5;
@@ -541,6 +538,8 @@ Surface getDist(vec3 p)
     // Sphere.color=vec3(0.,1.0,0.);
     // d=unionS(d,Sphere);
 
+Surface getDist(vec3 p)
+{
     Surface cyl;
     
     vec2 size = vec2(0.35, 1.2); // raio = 0.35, altura = 3.0
@@ -560,12 +559,29 @@ Surface getDist(vec3 p)
     ground.Ka = 0.1;
     ground.Kd = 0.5;
     ground.Ks = 0.1;
-    ground.id = 99;
+    ground.id = 20;
 
-    return (ground.sd < cyl.sd) ? ground : cyl;
+    Surface d = unionS(ground, cyl);
 
+    // Parâmetros do sol
+    float sunRadius = 0.3;
+    float sunOrbitRadius = 6.0;
 
-    // return cyl;
+    // Posição animada do sol (orbita verticalmente)
+    float angle = iTime * 0.2; // velocidade angular
+    vec3 sunPos = vec3(sunOrbitRadius * cos(angle), 3.0 * sin(angle), 4.0);
+
+    // Esfera do sol
+    Surface sun;
+    sun.sd = length(p - sunPos) - sunRadius;
+    sun.color = vec3(1.0, 0.9, 0.5); // tom amarelado
+    sun.Ka = 0.0;
+    sun.Kd = 0.0;
+    sun.Ks = 0.0;
+    sun.id = 30; // use um ID exclusivo
+    d = unionS(sun, d);
+
+    return d;
 }
 
 Surface rayMarching(vec3 Cam, vec3 rd)
@@ -679,6 +695,10 @@ vec3 getLight(vec3 p,Surface s,vec3 Cam)
 
         s.color = texture(iChannel0, vec2(u, v)).rgb;        
     }
+    else if (s.id == 30) {
+        s.color = s.color * 5.0; // brilho forte (emissão)
+    }
+
     
 
 
