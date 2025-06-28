@@ -125,6 +125,26 @@ Surface getDist(vec3 point) {
     // Combina o sol com a cena anterior
     combinedSurface = unionSurfaces(sunSurface, combinedSurface);
 
+        // Parâmetros para a lua
+    float moonRadius = 0.2;
+    vec3 moonPosition = vec3(
+        -sunOrbitRadius * cos(sunOrbitAngle),
+        3.0 * -sin(sunOrbitAngle),
+        4.0
+    );
+
+    // Define a superfície da lua (esfera oposta ao Sol)
+    Surface moonSurface;
+    moonSurface.distanceToSurface = length(point - moonPosition) - moonRadius;
+    moonSurface.surfaceColor = vec3(0.6, 0.7, 1.0); // tom azulado
+    moonSurface.ambientCoeff = 0.1;
+    moonSurface.diffuseCoeff = 0.5;
+    moonSurface.specularCoeff = 0.2;
+    moonSurface.objectId = 40;
+
+    // Combina lua com a cena
+    combinedSurface = unionSurfaces(moonSurface, combinedSurface);
+
     return combinedSurface;
 }
 
@@ -138,14 +158,18 @@ Surface rayMarching(vec3 cameraPosition, vec3 rayDirection) {
     // Posição animada do sol (deve bater com a usada em getDist)
     float sunAngle = iTime * 0.2;
     vec3 sunPosition = vec3(6.0 * cos(sunAngle), 3.0 * sin(sunAngle), 4.0);
-
     float sunGlow = 0.0;
+    vec3 moonPosition = vec3(-6.0 * cos(sunAngle), -3.0 * sin(sunAngle), 4.0);
+    float moonGlow = 0.0;
     int stepCount = 0;
 
     // Loop de ray marching: avança até encontrar a superfície ou exceder os limites
     while ((stepCount < MAX_STEPS) && (surfaceHit.distanceToSurface > SURF_DIST) && (totalDistance < MAX_DIST)) {
         float distanceToSun = length(currentPosition - sunPosition);
         sunGlow += exp(-distanceToSun * 10.0) * 0.02;
+
+        float distanceToMoon = length(currentPosition - moonPosition);
+        moonGlow += exp(-distanceToMoon * 10.0) * 0.01;
 
         totalDistance += surfaceHit.distanceToSurface;
         currentPosition = cameraPosition + totalDistance * rayDirection;
@@ -155,7 +179,9 @@ Surface rayMarching(vec3 cameraPosition, vec3 rayDirection) {
 
     // Se o raio não colidiu com nenhum objeto (céu ou fundo)
     if ((stepCount > MAX_STEPS) || (totalDistance > MAX_DIST)) {
-        surfaceHit.surfaceColor = getSkyColor(rayDirection) + sunGlow * vec3(1.0, 0.9, 0.6); // brilho do sol no fundo
+        surfaceHit.surfaceColor = getSkyColor(rayDirection)
+            + sunGlow * vec3(1.0, 0.9, 0.6)
+            + moonGlow * vec3(0.6, 0.7, 1.0); // brilho do sol no fundo
         surfaceHit.distanceToSurface = MAX_DIST;
     } else {
         surfaceHit.distanceToSurface = totalDistance;
@@ -253,9 +279,14 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
     vec3 redLightColor = vec3(1.0, 0.0, 0.0);
     vec3 redLightPosition = vec3(-3.0, 4.0, 4.0);
 
+    // Posição e cor da Lua (oposta ao Sol)
+    vec3 moonPosition = vec3(-6.0 * cos(sunAngle), -3.0 * sin(sunAngle), 4.0);
+    vec3 moonColor = vec3(0.5, 0.6, 1.0); // luz azulada fraca
+
     // Direções das luzes para o ponto
     vec3 sunDirection = normalize(sunPosition - surfacePosition);
     vec3 redLightDirection = normalize(redLightPosition - surfacePosition);
+    vec3 moonDirection = normalize(moonPosition - surfacePosition);
     vec3 viewDirection = normalize(cameraPosition - surfacePosition);
 
     // Normal estimada no ponto da superfície
@@ -264,10 +295,12 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
     // Vetores de reflexão especular
     vec3 sunReflection = normalize(reflect(-sunDirection, surfaceNormal));
     vec3 redReflection = normalize(reflect(-redLightDirection, surfaceNormal));
+    vec3 moonReflection = normalize(reflect(-moonDirection, surfaceNormal));
 
     // Iluminação difusa (dot produto entre luz e normal)
     float sunDiffuse = clamp(dot(surfaceNormal, sunDirection), 0.0, 1.0);
     float redDiffuse = clamp(dot(surfaceNormal, redLightDirection), 0.0, 1.0);
+    float moonDiffuse = clamp(dot(surfaceNormal, moonDirection), 0.0, 1.0);
 
     // Sombras suaves (evita sombra sobre o próprio sol)
     float sunShadowFactor = 1.0;
@@ -290,6 +323,11 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
     if (redSpecDot > 0.0)
         redSpecular = redLightColor * surfaceData.specularCoeff * pow(redSpecDot, shininess);
 
+    float moonSpecDot = dot(moonReflection, viewDirection);
+    vec3 moonSpecular = vec3(0.0);
+    if (moonSpecDot > 0.0)
+        moonSpecular = moonColor * surfaceData.specularCoeff * pow(moonSpecDot, shininess);
+
     // Textura cilíndrica (aplicada ao objeto com ID 10)
     if (surfaceData.objectId == 10) {
         vec3 localPosition = surfacePosition - vec3(0.0, 1.0, 4.0);
@@ -304,13 +342,20 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
         return sunColor * 1.0;
     }
 
+    
+
     // Composição final da luz (ambiente + difusa + especular)
     vec3 finalColor =
         surfaceData.surfaceColor * surfaceData.ambientCoeff +
         (surfaceData.surfaceColor * sunColor * sunDiffuse * surfaceData.diffuseCoeff) * sunShadowFactor +
         (surfaceData.surfaceColor * redLightColor * redDiffuse * surfaceData.diffuseCoeff) * redShadowFactor +
-        sunSpecular + redSpecular;
+        (surfaceData.surfaceColor * moonColor * moonDiffuse * surfaceData.diffuseCoeff * 0.4) + // lua mais fraca
+        sunSpecular + redSpecular + moonSpecular * 0.4;
 
+    if (surfaceData.objectId == 40) { // ID da lua
+        finalColor += moonColor * 0.2; // brilho leve próprio da lua
+    }
+    
     return finalColor;
 }
 
