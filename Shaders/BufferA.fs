@@ -31,22 +31,38 @@ struct Surface {
 };
 
 
-vec3 getSkyColor(vec3 rayDirection) {
-    // Normaliza o componente Y do raio para evitar divisão por zero
+vec3 getSkyColor(vec3 rayDirection, vec3 sunPosition, float sunAngle) {
+    
+    // Normaliza a altura do sol para [0,1]: -3 → 0, 0 → 0.5, +3 → 1
+    float sunHeight = clamp(sunPosition.y / 3.0 * 0.5 + 0.5, 0.0, 1.0);
+
+    vec3 nightColor = vec3(0.02, 0.02, 0.08);  // noite
+    vec3 dawnColor  = vec3(0.8, 0.4, 0.2);     // amanhecer/entardecer
+    vec3 dayColor   = vec3(0.4, 0.7, 1.0);     // dia
+
+    // Se sunHeight está entre 0 e 0.5, interpola entre noite e amanhecer
+    // Se entre 0.5 e 1.0, interpola entre amanhecer e dia
+
+    vec3 skyColor;
+    if (sunHeight < 0.5) {
+        float t = smoothstep(0.0, 0.5, sunHeight);
+        skyColor = mix(nightColor, dawnColor, t);
+    } else {
+        float t = smoothstep(0.5, 1.0, sunHeight);
+        skyColor = mix(dawnColor, dayColor, t);
+    }
+
+    // Atenuação perto do horizonte para escurecer
     float verticalFactor = 1.0 / max(rayDirection.y, 0.01);
-
-    // Cor base do céu (clara)
-    vec3 skyColorBase = vec3(0.8);
-
-    // Cor do horizonte/parte inferior (preto)
-    vec3 horizonColor = vec3(0.0);
-
-    // Fator de atenuação exponencial para criar gradiente suave no céu
     vec3 attenuation = exp2(-verticalFactor * vec3(0.4, 0.6, 1.0));
+    skyColor = mix(skyColor, vec3(0.0), attenuation);
 
-    // Interpola linearmente entre céu claro e horizonte escuro com o atenuador
-    return mix(skyColorBase, horizonColor, attenuation);
+    return skyColor;
 }
+
+
+
+
 
 const vec3 COLOR_BACKGROUND = vec3(0.25, 0.1, 0.15);
 
@@ -179,7 +195,7 @@ Surface rayMarching(vec3 cameraPosition, vec3 rayDirection) {
 
     // Se o raio não colidiu com nenhum objeto (céu ou fundo)
     if ((stepCount > MAX_STEPS) || (totalDistance > MAX_DIST)) {
-        surfaceHit.surfaceColor = getSkyColor(rayDirection)
+        surfaceHit.surfaceColor = getSkyColor(rayDirection, sunPosition, sunAngle)
             + sunGlow * vec3(1.0, 0.9, 0.6)
             + moonGlow * vec3(0.6, 0.7, 1.0); // brilho do sol no fundo
         surfaceHit.distanceToSurface = MAX_DIST;
@@ -355,7 +371,7 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
     if (surfaceData.objectId == 40) { // ID da lua
         finalColor += moonColor * 0.2; // brilho leve próprio da lua
     }
-    
+
     return finalColor;
 }
 
@@ -404,14 +420,9 @@ void main() {
 
     // Define a cor do pixel com base na colisão ou fundo
     if (surfaceData.distanceToSurface < MAX_DIST) {
-        finalColor = lighting; // Cor da superfície
+        finalColor = lighting; // Superfície visível
     } else {
-        finalColor = vec3(0.4, 0.7, 1.0); // Céu
-        // if (rayDirection.y < -0.01) {
-        //     finalColor = vec3(0.2, 0.6, 0.2); // Grama (opcional)
-        // } else {
-        //     finalColor = vec3(0.4, 0.7, 1.0); // Céu
-        // }
+        finalColor = surfaceData.surfaceColor; // Usa cor do céu com interpolação
     }
 
     // Correção gama para melhor aparência visual
