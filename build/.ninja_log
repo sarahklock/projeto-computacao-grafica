@@ -1,5 +1,5 @@
 # ninja log v6
-23	1824	7725178277623764	CMakeFiles/Math3.dir/stb_image/stb_image.cpp.obj	43d6a4908f133480
-18	2289	7725178277623764	CMakeFiles/Math3.dir/glad.c.obj	a4067f887eed9de2
-14	6567	7725178277623764	CMakeFiles/Math3.dir/Math3.cpp.obj	cf055ab43563d64a
-6570	6994	7725178343069725	Math3.exe	f1011f9161f24059
+22	4499	7726964480729770	CMakeFiles/Math3.dir/stb_image/stb_image.cpp.obj	ba3884018c7b5b44
+13	7907	7726964480649274	CMakeFiles/Math3.dir/glad.c.obj	3e47c49773c34ea9
+5	18373	7726964480498332	CMakeFiles/Math3.dir/Math3.cpp.obj	ab107ddf23f42cb4
+18378	19003	7726964664299422	Math3.exe	4f541552706cdfb2

@@ -61,9 +61,6 @@ vec3 getSkyColor(vec3 rayDirection, vec3 sunPosition, float sunAngle) {
 }
 
 
-
-
-
 const vec3 COLOR_BACKGROUND = vec3(0.25, 0.1, 0.15);
 
 mat4 translateMatrix(vec3 translation) {
@@ -120,11 +117,11 @@ Surface getDist(vec3 point) {
 
     // Parâmetros para o sol (esfera animada)
     float sunRadius = 0.3;
-    float sunOrbitRadius = 6.0;
+    float orbitRadius = 6.0; // mesma distância para ambos
     float sunOrbitAngle = iTime * 0.2; // velocidade angular do sol
 
     vec3 sunPosition = vec3(
-        sunOrbitRadius * cos(sunOrbitAngle), 
+        orbitRadius * cos(sunOrbitAngle), 
         3.0 * sin(sunOrbitAngle), 
         4.0
     );
@@ -141,11 +138,11 @@ Surface getDist(vec3 point) {
     // Combina o sol com a cena anterior
     combinedSurface = unionSurfaces(sunSurface, combinedSurface);
 
-        // Parâmetros para a lua
+    // Parâmetros para a lua
     float moonRadius = 0.2;
     vec3 moonPosition = vec3(
-        -sunOrbitRadius * cos(sunOrbitAngle),
-        3.0 * -sin(sunOrbitAngle),
+        -orbitRadius * cos(sunOrbitAngle),
+        -3.0 * sin(sunOrbitAngle),
         4.0
     );
 
@@ -286,18 +283,21 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
     if (surfaceData.distanceToSurface == MAX_DIST)
         return surfaceData.surfaceColor;
 
-    // Posição e cor do Sol (animado)
+    // Posição e cor do Sol e da Lua (animado)
     float sunAngle = iTime * 0.2;
-    vec3 sunPosition = vec3(6.0 * cos(sunAngle), 3.0 * sin(sunAngle), 4.0);
+    float orbitRadius = 8.0;
+    float lightY = 3.0 * sin(sunAngle);
+    
+    vec3 sunPosition  = vec3( orbitRadius * cos(sunAngle),  lightY, 4.0);
+    vec3 moonPosition = vec3(-orbitRadius * cos(sunAngle), -lightY, 4.0);
+
+
     vec3 sunColor = vec3(1.0, 0.9, 0.6);
+    vec3 moonColor = vec3(0.5, 0.6, 1.0); // luz azulada fraca
 
     // Segunda fonte de luz (vermelha, fixa)
     vec3 redLightColor = vec3(1.0, 0.0, 0.0);
     vec3 redLightPosition = vec3(-3.0, 4.0, 4.0);
-
-    // Posição e cor da Lua (oposta ao Sol)
-    vec3 moonPosition = vec3(-6.0 * cos(sunAngle), -3.0 * sin(sunAngle), 4.0);
-    vec3 moonColor = vec3(0.5, 0.6, 1.0); // luz azulada fraca
 
     // Direções das luzes para o ponto
     vec3 sunDirection = normalize(sunPosition - surfacePosition);
@@ -389,19 +389,28 @@ void main() {
     // Coordenadas normalizadas do mouse (0~1)
     vec2 mouseUV = iMouse.xy / iResolution.xy;
 
-    // Posição inicial da câmera
-    vec3 cameraPosition = vec3(1.0, -1.0, 2.0);
-
     // Ângulos de rotação da câmera com base no mouse
     float azimuthAngle = mix(-0.5 * PI, 0.5 * PI, iMouse.z * mouseUV.x);    // horizontal
     float elevationAngle = mix(-0.25 * PI, 0.25 * PI, iMouse.z * mouseUV.y); // vertical
 
-    // Ponto para o qual a câmera está olhando
-    vec3 targetPosition = vec3(0.5, 1.5, 0.5);
+    // Ângulo do sol/lua
+    float sunAngle = iTime * 0.2;
+    float activeY = max(3.0 * sin(sunAngle), 0.0); // considera o mais alto entre sol/lua
 
-    // Atualiza a posição da câmera com base nos ângulos (orbita ao redor do alvo)
-    cameraPosition.xz += length(cameraPosition - targetPosition) * vec2(cos(azimuthAngle), sin(azimuthAngle));
-    cameraPosition.yz += length(cameraPosition - targetPosition) * vec2(cos(elevationAngle), sin(elevationAngle));
+    // Ponto da caixa d'água (sempre visado)
+    vec3 targetPosition = vec3(0.0, 1.2, 4.0);
+
+    // Altura animada da câmera (subindo com sol ou lua)
+    float cameraY = max(1.5, 1.2 + 0.5 * activeY);
+
+    // Raio da órbita da câmera ao redor do alvo (aumentado para enquadrar sol e lua)
+    float orbitRadius = 6.0;
+
+    // Posição da câmera orbitando ao redor do ponto-alvo
+    vec3 cameraPosition = targetPosition +
+        vec3(cos(azimuthAngle), 0.0, sin(azimuthAngle)) * orbitRadius;
+
+    cameraPosition.y = cameraY;
 
     // Gera a matriz de orientação da câmera
     mat3 cameraMatrix = setCamera(cameraPosition, targetPosition);
@@ -431,5 +440,3 @@ void main() {
     // Saída da cor final do fragmento
     C = vec4(finalColor, 1.0);
 }
-
-
