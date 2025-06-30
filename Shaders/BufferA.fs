@@ -117,12 +117,13 @@ Surface getDist(vec3 point) {
 
     // Parâmetros para o sol (esfera animada)
     float sunRadius = 0.3;
-    float orbitRadius = 6.0; // mesma distância para ambos
+    float orbitRadius = 6.0; // raio da orbita do sol e da lua
     float sunOrbitAngle = iTime * 0.2; // velocidade angular do sol
+    float orbitCenter = 1.0; //define a altura do sol e da lua
 
     vec3 sunPosition = vec3(
         orbitRadius * cos(sunOrbitAngle), 
-        3.0 * sin(sunOrbitAngle), 
+        3.0 * sin(sunOrbitAngle) + orbitCenter, 
         4.0
     );
 
@@ -139,10 +140,10 @@ Surface getDist(vec3 point) {
     combinedSurface = unionSurfaces(sunSurface, combinedSurface);
 
     // Parâmetros para a lua
-    float moonRadius = 0.2;
+    float moonRadius = 0.3;
     vec3 moonPosition = vec3(
         -orbitRadius * cos(sunOrbitAngle),
-        -3.0 * sin(sunOrbitAngle),
+        -3.0 * sin(sunOrbitAngle) + orbitCenter,
         4.0
     );
 
@@ -170,10 +171,15 @@ Surface rayMarching(vec3 cameraPosition, vec3 rayDirection) {
 
     // Posição animada do sol (deve bater com a usada em getDist)
     float sunAngle = iTime * 0.2;
-    vec3 sunPosition = vec3(6.0 * cos(sunAngle), 3.0 * sin(sunAngle), 4.0);
+    float orbitRadius = 6.0;
+    float lightY = 3.0 * sin(sunAngle);
+
+    vec3 sunPosition  = vec3( orbitRadius * cos(sunAngle),  lightY, 4.0);
+    vec3 moonPosition = vec3(-orbitRadius * cos(sunAngle), -lightY, 4.0);
+
     float sunGlow = 0.0;
-    vec3 moonPosition = vec3(-6.0 * cos(sunAngle), -3.0 * sin(sunAngle), 4.0);
     float moonGlow = 0.0;
+
     int stepCount = 0;
 
     // Loop de ray marching: avança até encontrar a superfície ou exceder os limites
@@ -285,12 +291,10 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
 
     // Posição e cor do Sol e da Lua (animado)
     float sunAngle = iTime * 0.2;
-    float orbitRadius = 8.0;
+    float orbitRadius = 6.0;
     float lightY = 3.0 * sin(sunAngle);
-    
     vec3 sunPosition  = vec3( orbitRadius * cos(sunAngle),  lightY, 4.0);
     vec3 moonPosition = vec3(-orbitRadius * cos(sunAngle), -lightY, 4.0);
-
 
     vec3 sunColor = vec3(1.0, 0.9, 0.6);
     vec3 moonColor = vec3(0.5, 0.6, 1.0); // luz azulada fraca
@@ -358,7 +362,27 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
         return sunColor * 1.0;
     }
 
-    
+    // Textura esférica para a Lua (ID 40)
+    if (surfaceData.objectId == 40) {
+        // Recalcula a posição da lua (mesmo que no getDist)
+        float sunAngle = iTime * 0.2;
+        float orbitRadius = 6.0;
+        vec3 moonPosition = vec3(-orbitRadius * cos(sunAngle), -3.0 * sin(sunAngle), 4.0);
+
+        // Posição relativa ao centro da lua
+        vec3 localPosition = surfacePosition - moonPosition;
+        vec3 dir = normalize(localPosition);
+
+        // Coordenadas UV esféricas
+        float u = 0.5 + atan(dir.z, dir.x) / (2.0 * PI);
+        float v = 0.5 - asin(dir.y) / PI;
+
+        // Aplica a textura da lua
+        surfaceData.surfaceColor = texture(iChannel1, vec2(u, v)).rgb;
+
+        // Brilho adicional para simular luminosidade da lua
+        surfaceData.surfaceColor += vec3(0.1, 0.1, 0.2);
+    }
 
     // Composição final da luz (ambiente + difusa + especular)
     vec3 finalColor =
@@ -368,9 +392,6 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
         (surfaceData.surfaceColor * moonColor * moonDiffuse * surfaceData.diffuseCoeff * 0.4) + // lua mais fraca
         sunSpecular + redSpecular + moonSpecular * 0.4;
 
-    if (surfaceData.objectId == 40) { // ID da lua
-        finalColor += moonColor * 0.2; // brilho leve próprio da lua
-    }
 
     return finalColor;
 }
@@ -382,7 +403,7 @@ void main() {
 
     // Direção inicial do raio (antes da rotação pela câmera)
     vec3 rayDirection = normalize(vec3(screenUV, 1));
-    
+
     // Cor final do pixel
     vec3 finalColor;
 
@@ -393,23 +414,30 @@ void main() {
     float azimuthAngle = mix(-0.5 * PI, 0.5 * PI, iMouse.z * mouseUV.x);    // horizontal
     float elevationAngle = mix(-0.25 * PI, 0.25 * PI, iMouse.z * mouseUV.y); // vertical
 
-    // Ângulo do sol/lua
-    float sunAngle = iTime * 0.2;
-    float activeY = max(3.0 * sin(sunAngle), 0.0); // considera o mais alto entre sol/lua
-
     // Ponto da caixa d'água (sempre visado)
     vec3 targetPosition = vec3(0.0, 1.2, 4.0);
 
-    // Altura animada da câmera (subindo com sol ou lua)
-    float cameraY = max(1.5, 1.2 + 0.5 * activeY);
+    // Cálculo da altura do Sol e da Lua
+    float sunAngle = iTime * 0.2;
+    float sunY  =  3.0 * sin(sunAngle);
+    float moonY = -3.0 * sin(sunAngle);
 
-    // Raio da órbita da câmera ao redor do alvo (aumentado para enquadrar sol e lua)
-    float orbitRadius = 6.0;
+    // Determina o astro ativo acima do solo
+    float activeY = (sunY > 0.0) ? sunY : (moonY > 0.0 ? moonY : 0.0);
+
+    // Movimento inverso da câmera em relação ao astro ativo
+    float cameraYOffset = -activeY * 0.5;
+    float baseCameraY = 1.8;
+    float cameraY = baseCameraY + cameraYOffset;
+
+    // Raio da órbita da câmera ao redor do alvo
+    float CameraOrbitRadius = 6.0;
 
     // Posição da câmera orbitando ao redor do ponto-alvo
     vec3 cameraPosition = targetPosition +
-        vec3(cos(azimuthAngle), 0.0, sin(azimuthAngle)) * orbitRadius;
+        vec3(cos(azimuthAngle), 0.0, sin(azimuthAngle)) * CameraOrbitRadius;
 
+    // Aplica altura ajustada da câmera
     cameraPosition.y = cameraY;
 
     // Gera a matriz de orientação da câmera

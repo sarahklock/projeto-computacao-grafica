@@ -213,6 +213,7 @@ int main()
     //Para utilizar o framebuffer, é necessário ligar a ele uma textura
     unsigned int iChannel_0;
      unsigned int imageTexture0 = loadTexture("../textures/caixadagua.jpg");
+     unsigned int luaTexture = loadTexture("../textures/lua.jpg");
     glGenTextures(1, &iChannel_0);
     glBindTexture(GL_TEXTURE_2D, iChannel_0);
      
@@ -414,7 +415,7 @@ double * mouse = (double *) malloc(sizeof(double)*4);
         //Utilização de um segundo shader para calcular vizinhança
          BufferAprogram.use();
         BufferAprogram.setSampler("iChannel0",0);
-         //BufferAprogram.setSampler("iChannel1",1);
+         //BufferAprogram.setSampler()"iChannel1",1);
         BufferAprogram.setVec2("iResolution",resolution) ;
         BufferAprogram.setVec4("iMouse", mouse);
         BufferAprogram.setFloat("iTime",currentTime);
@@ -422,6 +423,9 @@ double * mouse = (double *) malloc(sizeof(double)*4);
         glBindVertexArray(VAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, imageTexture0);
+        glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, luaTexture);
+
        //glActiveTexture(GL_TEXTURE1);
         //glBindTexture(GL_TEXTURE_2D, iChannel_3);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,0);
@@ -517,6 +521,7 @@ double * mouse = (double *) malloc(sizeof(double)*4);
         glBindVertexArray(VAO);
         Imageprogram.setVec2("iResolution",resolution) ;
        Imageprogram.setSampler("iChannel0",0);
+       Imageprogram.setSampler("iChannel1", 1);
         //Imageprogram.setSampler("iChannel1",1);
        // Imageprogram.setSampler("iChannel2",2);
         //Imageprogram.setSampler("iChannel3",3);
@@ -524,6 +529,9 @@ double * mouse = (double *) malloc(sizeof(double)*4);
         Imageprogram.setVec4("iMouse", mouse);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, iChannel_0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, luaTexture);
+
         //glActiveTexture(GL_TEXTURE1);
         //glBindTexture(GL_TEXTURE_2D, iChannel_1);
         //glActiveTexture(GL_TEXTURE2);
