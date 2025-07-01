@@ -350,12 +350,13 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
 
     // Textura cilíndrica (aplicada ao objeto com ID 10)
     if (surfaceData.objectId == 10) {
-        vec3 localPosition = surfacePosition - vec3(0.0, 1.0, 4.0);
+        vec3 localPosition = surfacePosition - vec3(0.0, 1.2, 4.0); // usa o centro real do cilindro
         float theta = atan(localPosition.z, localPosition.x);
         float u = (theta + PI) / (2.0 * PI);
-        float v = 1.0 - clamp(localPosition.y / 2.0 + 0.5, 0.0, 1.0);
+        float v = 1.0 - clamp((localPosition.y + 1.2) / 2.4, 0.0, 1.0);
         surfaceData.surfaceColor = texture(iChannel0, vec2(u, v)).rgb;
     }
+
 
     // Se atingiu diretamente o sol, retorna apenas a cor intensa dele
     if (surfaceData.objectId == 30) {
@@ -364,25 +365,24 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
 
     // Textura esférica para a Lua (ID 40)
     if (surfaceData.objectId == 40) {
-        // Recalcula a posição da lua (mesmo que no getDist)
+        // Posição da lua como em getDist
         float sunAngle = iTime * 0.2;
         float orbitRadius = 6.0;
-        vec3 moonPosition = vec3(-orbitRadius * cos(sunAngle), -3.0 * sin(sunAngle), 4.0);
+        vec3 moonPosition = vec3(-orbitRadius * cos(sunAngle), -3.0 * sin(sunAngle) + 1.0, 4.0);
 
-        // Posição relativa ao centro da lua
-        vec3 localPosition = surfacePosition - moonPosition;
-        vec3 dir = normalize(localPosition);
+        // Direção normalizada do ponto na lua em relação ao centro
+        vec3 localPosition = normalize(surfacePosition - moonPosition);
 
-        // Coordenadas UV esféricas
-        float u = 0.5 + atan(dir.z, dir.x) / (2.0 * PI);
-        float v = 0.5 - asin(dir.y) / PI;
+        // Coordenadas UV com mapeamento esférico adequado
+        float u = 0.5 + atan(localPosition.z, localPosition.x) / (2.0 * PI);
+        float v = acos(localPosition.y) / PI;
 
-        // Aplica a textura da lua
         surfaceData.surfaceColor = texture(iChannel1, vec2(u, v)).rgb;
 
-        // Brilho adicional para simular luminosidade da lua
+        // Brilho sutil adicional
         surfaceData.surfaceColor += vec3(0.1, 0.1, 0.2);
     }
+
 
     // Composição final da luz (ambiente + difusa + especular)
     vec3 finalColor =

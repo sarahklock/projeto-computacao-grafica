@@ -415,7 +415,7 @@ double * mouse = (double *) malloc(sizeof(double)*4);
         //Utilização de um segundo shader para calcular vizinhança
          BufferAprogram.use();
         BufferAprogram.setSampler("iChannel0",0);
-         //BufferAprogram.setSampler()"iChannel1",1);
+         BufferAprogram.setSampler("iChannel1",1);
         BufferAprogram.setVec2("iResolution",resolution) ;
         BufferAprogram.setVec4("iMouse", mouse);
         BufferAprogram.setFloat("iTime",currentTime);
