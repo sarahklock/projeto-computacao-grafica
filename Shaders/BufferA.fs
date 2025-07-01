@@ -185,7 +185,8 @@ Surface rayMarching(vec3 cameraPosition, vec3 rayDirection) {
     // Loop de ray marching: avança até encontrar a superfície ou exceder os limites
     while ((stepCount < MAX_STEPS) && (surfaceHit.distanceToSurface > SURF_DIST) && (totalDistance < MAX_DIST)) {
         float distanceToSun = length(currentPosition - sunPosition);
-        sunGlow += exp(-distanceToSun * 10.0) * 0.02;
+        sunGlow += exp(-distanceToSun * 4.0) * 0.08;
+
 
         float distanceToMoon = length(currentPosition - moonPosition);
         moonGlow += exp(-distanceToMoon * 10.0) * 0.01;
@@ -199,15 +200,16 @@ Surface rayMarching(vec3 cameraPosition, vec3 rayDirection) {
     // Se o raio não colidiu com nenhum objeto (céu ou fundo)
     if ((stepCount > MAX_STEPS) || (totalDistance > MAX_DIST)) {
         surfaceHit.surfaceColor = getSkyColor(rayDirection, sunPosition, sunAngle)
-            + sunGlow * vec3(1.0, 0.9, 0.6)
-            + moonGlow * vec3(0.6, 0.7, 1.0); // brilho do sol no fundo
+    + sunGlow * vec3(1.0, 0.9, 0.6) * 1.5
+    + moonGlow * vec3(0.6, 0.7, 1.0);
+
         surfaceHit.distanceToSurface = MAX_DIST;
     } else {
         surfaceHit.distanceToSurface = totalDistance;
 
         // Caso o raio tenha atingido diretamente o sol (ID 30)
         if (surfaceHit.objectId == 30) {
-            surfaceHit.surfaceColor = vec3(1.0, 0.9, 0.6) * 6.0; // brilho intenso do sol visível
+            surfaceHit.surfaceColor = vec3(1.0, 0.9, 0.6) * 8.0; // brilho intenso do sol visível
         }
     }
 
