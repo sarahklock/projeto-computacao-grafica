@@ -425,6 +425,7 @@ double * mouse = (double *) malloc(sizeof(double)*4);
         glBindTexture(GL_TEXTURE_2D, imageTexture0);
         glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, luaTexture);
+    
 
        //glActiveTexture(GL_TEXTURE1);
         //glBindTexture(GL_TEXTURE_2D, iChannel_3);

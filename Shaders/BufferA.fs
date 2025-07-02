@@ -411,7 +411,7 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
 
     // Se atingiu diretamente o sol, retorna apenas a cor intensa dele
     if (surfaceData.objectId == 30) {
-        return sunColor * 1.0;
+        return sunColor * 8.0;
     }
 
     // Textura esférica para a Lua (ID 40)
@@ -442,7 +442,6 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
         (surfaceData.surfaceColor * redLightColor * redDiffuse * surfaceData.diffuseCoeff) * redShadowFactor +
         (surfaceData.surfaceColor * moonColor * moonDiffuse * surfaceData.diffuseCoeff * 0.4) + // lua mais fraca
         sunSpecular + redSpecular + moonSpecular * 0.4;
-
 
     return finalColor;
 }
@@ -516,6 +515,30 @@ void main() {
 
     // Correção gama para melhor aparência visual
     finalColor = pow(finalColor, vec3(0.4545));
+
+    // Intensidade da neblina com base na posição do Sol
+    float fogIntensity = 1.0 - smoothstep(-0.7, 0.5, sunY);
+    // 1.0 à noite, 0.0 de dia, transição suave entre -0.3 e 0.2
+
+    // Só aplica se a neblina for perceptível
+    if (fogIntensity > 0.01) {
+        float fogStart = 3.0;
+        float fogEnd = 12.0;
+        float fogFactor = smoothstep(fogStart, fogEnd, surfaceData.distanceToSurface);
+
+        // Aplica somente na faixa do horizonte
+        float horizonFactor = smoothstep(0.2, -0.05, rayDirection.y);
+
+        // Ruído leve para variação visual
+        float noise = fract(sin(dot(rayDirection.xy + iTime * 0.1, vec2(12.9898,78.233))) * 43758.5453);
+        float fogVariation = mix(0.85, 1.15, noise);
+
+        vec3 fogColor = vec3(0.4, 0.45, 0.5) * fogVariation;
+
+        float combinedFog = fogIntensity * fogFactor * horizonFactor;
+
+        finalColor = mix(finalColor, fogColor, clamp(combinedFog, 0.0, 1.0));
+    }
 
     // Saída da cor final do fragmento
     C = vec4(finalColor, 1.0);
