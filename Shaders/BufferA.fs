@@ -162,6 +162,45 @@ Surface getDist(vec3 point) {
     return combinedSurface;
 }
 
+float hash(vec3 p) {
+    p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+float starField(vec3 rayDir, float density) {
+    // Coordenadas esféricas a partir da direção
+    float u = 0.5 + atan(rayDir.z, rayDir.x) / (2.0 * PI);
+    float v = acos(rayDir.y) / PI;
+
+    vec2 uv = vec2(u, v) * density;
+
+    vec2 cell = floor(uv);
+    float n = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+
+    float threshold = 0.99;
+    if (n > threshold) {
+        // Posição pseudoaleatória da estrela dentro da célula
+        vec2 local = fract(uv);
+        vec2 starOffset = vec2(
+            fract(sin(dot(cell + 0.1, vec2(21.17, 13.71))) * 43758.5453),
+            fract(sin(dot(cell + 0.2, vec2(31.41, 15.37))) * 43758.5453)
+        );
+        
+        float dist = distance(local, starOffset);
+        
+        // Perfil suave com decaimento exponencial — controla o "tamanho"
+        float sharpness = 80.0; // quanto maior, menor e mais pontual a estrela
+        return exp(-sharpness * dist * dist) * (n - threshold) / (1.0 - threshold);
+    }
+
+    return 0.0;
+}
+
+
+
+
+
 Surface rayMarching(vec3 cameraPosition, vec3 rayDirection) {
     float totalDistance = 0.0;
     vec3 currentPosition = cameraPosition + totalDistance * rayDirection;
@@ -199,9 +238,19 @@ Surface rayMarching(vec3 cameraPosition, vec3 rayDirection) {
 
     // Se o raio não colidiu com nenhum objeto (céu ou fundo)
     if ((stepCount > MAX_STEPS) || (totalDistance > MAX_DIST)) {
-        surfaceHit.surfaceColor = getSkyColor(rayDirection, sunPosition, sunAngle)
-    + sunGlow * vec3(1.0, 0.9, 0.6) * 1.5
-    + moonGlow * vec3(0.6, 0.7, 1.0);
+        vec3 skyCol = getSkyColor(rayDirection, sunPosition, sunAngle);
+
+        // Estrelas só aparecem quando o sol está baixo
+        float sunHeight = sunPosition.y;
+        if (sunHeight < -0.1) {
+            float stars = starField(rayDirection, 400.0);
+            skyCol += vec3(1.5, 1.6, 1.7) * stars;
+        }
+
+        surfaceHit.surfaceColor = skyCol
+            + sunGlow * vec3(1.0, 0.9, 0.6) * 1.5
+            + moonGlow * vec3(0.6, 0.7, 1.0);
+
 
         surfaceHit.distanceToSurface = MAX_DIST;
     } else {
@@ -397,6 +446,7 @@ vec3 getLight(vec3 surfacePosition, Surface surfaceData, vec3 cameraPosition) {
 
     return finalColor;
 }
+
 
 void main() {
 
